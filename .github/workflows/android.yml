@@ -16,40 +16,52 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v3
 
-    # 2. 安装 Flutter
+    # 2. 缓存 Flutter SDK
+    - name: Cache Flutter SDK
+      id: cache-flutter
+      uses: actions/cache@v3
+      with:
+        path: ~/.flutter
+        key: ${{ runner.os }}-flutter-${{ hashFiles('**/flutter.pubspec') }}
+        restore-keys: |
+          ${{ runner.os }}-flutter-
+
+    # 3. 安装 Flutter SDK，如果缓存没有命中
     - name: Install Flutter
       run: |
-        git clone https://github.com/flutter/flutter.git -b stable
-        echo "$PWD/flutter/bin" >> $GITHUB_PATH
-        flutter --version
+        if [ ! -d "$HOME/.flutter/bin" ]; then
+          git clone https://github.com/flutter/flutter.git -b stable $HOME/.flutter
+        fi
+        echo "$HOME/.flutter/bin" >> $GITHUB_PATH
+        flutter --version  # 确保 flutter 命令可用
 
-    # 3. 获取依赖
+    # 4. 获取 Flutter 项目依赖
     - name: Install Dependencies
       run: flutter pub get
 
-    # 4. 构建 APK 文件（多架构）
+    # 5. 构建 APK 文件（支持多架构）
     - name: Build APK for All Architectures
       run: |
         flutter build apk --target-platform android-arm,android-arm64,android-x86,android-x64 --split-per-abi
       env:
         JAVA_HOME: /usr/lib/jvm/java-11-openjdk-amd64
 
-    # 5. 构建 AAB 文件（可选）
+    # 6. 构建 AAB 文件（可选）
     - name: Build AAB (Universal)
       run: |
         flutter build appbundle
       env:
         JAVA_HOME: /usr/lib/jvm/java-11-openjdk-amd64
 
-    # 6. 上传构建产物作为 Artifacts
+    # 7. 上传 APK 构建产物
     - name: Upload APKs
       uses: actions/upload-artifact@v3
       with:
         name: APKs
         path: build/app/outputs/flutter-apk/
 
+    # 8. 上传 AAB 构建产物
     - name: Upload AAB
-      if: success() && steps.build-aab.outputs.success == 'true'
       uses: actions/upload-artifact@v3
       with:
         name: AAB
