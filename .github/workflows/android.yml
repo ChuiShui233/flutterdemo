@@ -1,0 +1,55 @@
+name: Build Flutter Android App for All Architectures
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    name: Build Flutter Android App
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. 检出代码
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    # 2. 设置 Flutter 环境
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: 'stable'
+
+    # 3. 获取依赖
+    - name: Install Dependencies
+      run: flutter pub get
+
+    # 4. 构建 APK 文件（多架构）
+    - name: Build APK for All Architectures
+      run: |
+        flutter build apk --target-platform android-arm,android-arm64,android-x86,android-x64 --split-per-abi
+      env:
+        JAVA_HOME: /usr/lib/jvm/java-11-openjdk-amd64
+
+    # 5. 构建 AAB 文件（可选）
+    - name: Build AAB (Universal)
+      run: |
+        flutter build appbundle
+      env:
+        JAVA_HOME: /usr/lib/jvm/java-11-openjdk-amd64
+
+    # 6. 上传构建产物作为 Artifacts
+    - name: Upload APKs
+      uses: actions/upload-artifact@v3
+      with:
+        name: APKs
+        path: build/app/outputs/flutter-apk/
+
+    - name: Upload AAB
+      if: success() && steps.build-aab.outputs.success == 'true'
+      uses: actions/upload-artifact@v3
+      with:
+        name: AAB
+        path: build/app/outputs/bundle/release/app-release.aab
