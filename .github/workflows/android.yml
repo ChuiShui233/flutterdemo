@@ -4,9 +4,9 @@ on:
   push:
     branches: [ main ]
     tags:
-      - 'v*'  # 只有带有特定版本格式（如v1.0）的标签才会触发此工作流
+      - 'v*'  # Only tags with specific version formats (e.g., v1.0) will trigger this workflow
   pull_request:
-    branches: [ main ]  # 只有针对 main 分支的 PR 才会触发此工作流
+    branches: [ main ]  # Only PRs targeting the main branch will trigger this workflow
 
 jobs:
   prepare:
@@ -15,7 +15,7 @@ jobs:
       flutter_version: '3.27.1'
     steps:
       - name: Determine Flutter version
-        run: echo "::set-output name=flutter_version::3.27.1"  # 设置 Flutter 版本，以便后续任务使用
+        run: echo "flutter_version=3.27.1" >> $GITHUB_ENV  # Set Flutter version for subsequent jobs
 
   build_and_test:
     needs: prepare
@@ -30,24 +30,24 @@ jobs:
             os: macos-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2  # 检出仓库代码
+        uses: actions/checkout@v2  # Check out repository code
       - name: Setup Flutter
         uses: subosito/flutter-action@v1
         with:
-          flutter-version: ${{ needs.prepare.outputs.flutter_version }}  # 使用之前确定的 Flutter 版本
+          flutter-version: ${{ env.flutter_version }}  # Use the determined Flutter version
       - name: Install dependencies
-        run: flutter pub get  # 安装 Flutter 项目依赖
+        run: flutter pub get  # Install Flutter project dependencies
       - name: Run tests
-        run: flutter test  # 运行所有测试
+        run: flutter test  # Run all tests
       - name: Build
         run: |
           if [ "${{ matrix.platform }}" == "apk" ]; then
-            flutter build apk --release  # 构建 Android APK
+            flutter build apk --release  # Build Android APK
           else
-            flutter build ios --release --no-codesign  # 构建 iOS 应用，无需代码签名
+            flutter build ios --release --no-codesign  # Build iOS app without code signing
         shell: bash
       - name: Archive Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4  # Upload build artifacts
         with:
           name: ${{ matrix.platform }}-release
           path: |
@@ -61,11 +61,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Download Artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4  # Download build artifacts
         with:
           name: apk-release
       - name: Deploy
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
           echo "Deploying version $VERSION to production"
-          # 这里可以添加具体的部署命令，例如上传到应用商店或服务器
+          # Add specific deployment commands here, such as uploading to app stores or servers
