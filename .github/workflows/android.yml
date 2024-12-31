@@ -26,8 +26,7 @@ jobs:
         include:
           - platform: apk
             os: ubuntu-latest
-          - platform: ios
-            os: macos-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2  # Check out repository code
@@ -39,11 +38,8 @@ jobs:
         run: flutter pub get  # Install Flutter project dependencies
       - name: Build
         run: |
-          if [ "${{ matrix.platform }}" == "apk" ]; then
-            flutter build apk --release  # Build Android APK
-          else
-            flutter build ios --release --no-codesign  # Build iOS app without code signing
-        shell: bash
+              flutter build apk --release  # Build Android APK
+              shell: bash
       - name: Archive Artifacts
         uses: actions/upload-artifact@v4  # Upload build artifacts
         with:
