@@ -1,0 +1,71 @@
+name: Flutter CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'  # Only tags with specific version formats (e.g., v1.0) will trigger this workflow
+  pull_request:
+    branches: [ main ]  # Only PRs targeting the main branch will trigger this workflow
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      flutter_version: '3.27.1'
+    steps:
+      - name: Determine Flutter version
+        run: echo "flutter_version=3.27.1" >> $GITHUB_ENV  # Set Flutter version for subsequent jobs
+
+  build_and_test:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [apk, ios]
+        include:
+          - platform: apk
+            os: ubuntu-latest
+          - platform: ios
+            os: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2  # Check out repository code
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v1
+        with:
+          flutter-version: ${{ env.flutter_version }}  # Use the determined Flutter version
+      - name: Install dependencies
+        run: flutter pub get  # Install Flutter project dependencies
+      - name: Run tests
+        run: flutter test  # Run all tests
+      - name: Build
+        run: |
+          if [ "${{ matrix.platform }}" == "apk" ]; then
+            flutter build apk --release  # Build Android APK
+          else
+            flutter build ios --release --no-codesign  # Build iOS app without code signing
+        shell: bash
+      - name: Archive Artifacts
+        uses: actions/upload-artifact@v4  # Upload build artifacts
+        with:
+          name: ${{ matrix.platform }}-release
+          path: |
+            build/app/outputs/flutter-apk/*.apk
+            build/ios/iphoneos/*.app
+
+  deploy:
+    needs: build_and_test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4  # Download build artifacts
+        with:
+          name: apk-release
+      - name: Deploy
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "Deploying version $VERSION to production"
+          # Add specific deployment commands here, such as uploading to app stores or servers
