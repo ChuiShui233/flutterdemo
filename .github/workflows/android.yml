@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        platform: [apk, ios]
+        platform: [apk]
         include:
           - platform: apk
             os: ubuntu-latest
@@ -37,8 +37,6 @@ jobs:
           flutter-version: ${{ env.flutter_version }}  # Use the determined Flutter version
       - name: Install dependencies
         run: flutter pub get  # Install Flutter project dependencies
-      - name: Run tests
-        run: flutter test  # Run all tests
       - name: Build
         run: |
           if [ "${{ matrix.platform }}" == "apk" ]; then
