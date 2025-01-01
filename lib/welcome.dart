@@ -1,3 +1,6 @@
+import 'dart:math';
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -93,6 +96,10 @@ class _WelcomePageState extends State<WelcomePage>
   late AnimationController _fogRainAnimationController;
   late Animation<double> _fogRainFadeAnimation;
   late Animation<Offset> _fogRainSlideAnimation;
+  late AnimationController _shapeAnimationController;
+  late Animation<double> _shapeAnimation;
+   late AnimationController _blurBoxFadeAnimationController;
+  late Animation<double> _blurBoxFadeAnimation;
 
   @override
   void initState() {
@@ -119,12 +126,39 @@ class _WelcomePageState extends State<WelcomePage>
       curve: Curves.easeInOutQuad,
     ));
     _fogRainAnimationController.forward();
+
+
+    _shapeAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 5),
+    )..repeat(reverse: true);
+    _shapeAnimation = Tween<double>(begin: 0, end: 1).animate(CurvedAnimation(
+      parent: _shapeAnimationController,
+      curve: Curves.easeInOut,
+    ));
+       _blurBoxFadeAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800), // 动画时长
+    );
+       _blurBoxFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _blurBoxFadeAnimationController,
+        curve: Curves.easeIn, // 使用 easeIn 曲线
+      ),
+    );
+
+
+    Future.delayed(const Duration(seconds: 1), () {
+      _blurBoxFadeAnimationController.forward();
+    });
   }
 
   @override
   void dispose() {
     _animationController.dispose();
     _fogRainAnimationController.dispose();
+        _shapeAnimationController.dispose();
+          _blurBoxFadeAnimationController.dispose();
     super.dispose();
   }
 
@@ -143,11 +177,13 @@ class _WelcomePageState extends State<WelcomePage>
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(32.0),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
+            child: Card(
+              elevation: 8, // 添加阴影效果
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
               child: Container(
                 padding: const EdgeInsets.all(32.0),
-                color: Theme.of(context).cardColor,
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
@@ -156,14 +192,44 @@ class _WelcomePageState extends State<WelcomePage>
                       child: FadeTransition(
                         opacity: _fogRainFadeAnimation,
                         child: Text(
-                          '雾雨空间',
+                          '雾雨',
                           style: TextStyle(
-                            fontSize: 65,
+                            fontSize: 75,
                             fontWeight: FontWeight.bold,
                             color: Theme.of(context).hintColor.withOpacity(0.3),
                           ),
                         ),
                       ),
+                    ),
+                      AnimatedBuilder(
+                        animation: _shapeAnimation,
+                        builder: (context, child) {
+                          return CustomPaint(
+                            size: const Size(400, 400),
+                            painter: _ShapePainter(
+                                animationValue: _shapeAnimation.value,
+                                color: Theme.of(context).primaryColor),
+                          );
+                        },
+                      ),
+                    AnimatedBuilder(
+                      animation: _blurBoxFadeAnimation,
+                      builder: (context, child) {
+                        return Opacity(
+                          opacity: _blurBoxFadeAnimation.value,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 10 * _blurBoxFadeAnimation.value, sigmaY: 10*_blurBoxFadeAnimation.value),
+                              child: Container(
+                                width: 400,  // 设置宽度
+                                height: 180,  // 设置高度
+                                color: Colors.grey.withOpacity(0.1),
+                              ),
+                            ),
+                          ),
+                        );
+                      }
                     ),
                     const Text(
                       'Welcome',
@@ -179,6 +245,46 @@ class _WelcomePageState extends State<WelcomePage>
     );
   }
 }
+class _ShapePainter extends CustomPainter {
+  final double animationValue;
+  final Color color;
+
+  _ShapePainter({required this.animationValue, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final radius = min(size.width, size.height) / 4;
+    final paint = Paint()
+      ..color = color.withOpacity(0.8)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3;
+
+    // 使用动画值控制缩放和旋转
+    final scale = 0.5 + 0.5 * animationValue; // 从 0.5 到 1 的缩放
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.scale(scale, scale);
+    canvas.rotate(2 * pi * animationValue); // 旋转效果
+
+
+    // 绘制三角形
+    final path = Path();
+    path.moveTo(0, -radius * 2.0); // 放大三角形高度
+    path.lineTo(radius * 2.0 * sin(pi / 3), radius * 2.0 * cos(pi / 3)); // 放大三角形宽度
+    path.lineTo(-radius * 2.0 * sin(pi / 3), radius * 2.0 * cos(pi / 3)); // 放大三角形宽度
+    path.close();
+    canvas.drawPath(path, paint);
+
+
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_ShapePainter oldDelegate) =>
+      oldDelegate.animationValue != animationValue;
+}
+
 
 class PrivacyPolicyPage extends StatelessWidget {
   const PrivacyPolicyPage({super.key});
@@ -186,7 +292,7 @@ class PrivacyPolicyPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 50.0), // 添加水平和垂直间距
+      padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 75.0), // 添加水平和垂直间距
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center, // 高度居中
         children: <Widget>[
