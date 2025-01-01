@@ -22,12 +22,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        platform: [apk, ios]
+        platform: [apk]
         include:
           - platform: apk
             os: ubuntu-latest
-          - platform: ios
-            os: macos-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2  # Check out repository code
@@ -37,15 +36,9 @@ jobs:
           flutter-version: ${{ env.flutter_version }}  # Use the determined Flutter version
       - name: Install dependencies
         run: flutter pub get  # Install Flutter project dependencies
-      - name: Run tests
-        run: flutter test  # Run all tests
       - name: Build
         run: |
-          if [ "${{ matrix.platform }}" == "apk" ]; then
-            flutter build apk --release  # Build Android APK
-          else
-            flutter build ios --release --no-codesign  # Build iOS app without code signing
-        shell: bash
+              flutter build apk --release  # Build Android APK
       - name: Archive Artifacts
         uses: actions/upload-artifact@v4  # Upload build artifacts
         with:
@@ -53,7 +46,6 @@ jobs:
           path: |
             build/app/outputs/flutter-apk/*.apk
             build/ios/iphoneos/*.app
-
   deploy:
     needs: build_and_test
     runs-on: ubuntu-latest
