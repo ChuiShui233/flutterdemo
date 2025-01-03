@@ -110,7 +110,7 @@ class FeaturesPage extends StatelessWidget {
               if (data['title'] == 'DSU安装') {
                   Navigator.push(
                    context,
-                   MaterialPageRoute(builder: (context) => const DSUInstallationPage()),
+                   MaterialPageRoute(builder: (context) => const DSUInstallationScreen()),
                 );
               }
             },

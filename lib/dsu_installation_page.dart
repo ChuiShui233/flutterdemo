@@ -1,4 +1,3 @@
-// dsu_installation_page.dart
 import 'package:flutter/material.dart';
 
 class DSUInstallationPage extends StatelessWidget {
@@ -14,7 +13,7 @@ class DSUInstallationPage extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-               Icon(Icons.system_update_alt, size: 80, color: Colors.blue),
+              Icon(Icons.system_update_alt, size: 80, color: Colors.blue),
               SizedBox(height: 16),
               Text(
                 'DSU 安装向导',
@@ -29,9 +28,8 @@ class DSUInstallationPage extends StatelessWidget {
               Text(
                 '1. 下载 GSI 镜像文件。\n2. 选择安装位置。\n3. 开始安装。',
                 style: TextStyle(fontSize: 16),
-                 textAlign: TextAlign.center,
+                textAlign: TextAlign.center,
               ),
-             
             ],
           ),
         ),

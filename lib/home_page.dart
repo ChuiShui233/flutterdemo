@@ -156,15 +156,6 @@ class HomePage extends StatelessWidget {
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.topLeft,
                 child: Text(
-                  '编译时间： $buildTime', // 使用生成的 buildTime
-                  style: textStyle,
-                ),
-              ),
-              const SizedBox(height: 8),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.topLeft,
-                child: Text(
                   '环境： $environment',
                   style: textStyle,
                 ),

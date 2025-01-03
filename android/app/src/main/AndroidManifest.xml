@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="水月共创-前瞻版"
+        android:label="水月共创"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
