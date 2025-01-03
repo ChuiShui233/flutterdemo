@@ -1,0 +1,10 @@
+targets:
+  $default:
+    builders:
+      my_package_name|build_time_generator:
+        enabled: true
+        generate_for:
+          - lib/build_info.dart
+        options:
+          # 可选：自定义构建时间格式
+          format: "yyyy-MM-dd HH:mm:ss"

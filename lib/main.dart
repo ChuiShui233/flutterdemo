@@ -9,6 +9,10 @@ import 'package:url_launcher/url_launcher.dart';
 import 'dart:ui';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'welcome.dart'; // 导入 welcome.dart
+import 'dart:io';
+import 'build_info.dart'; // 导入生成的 build_info.dart
+
+import 'dsu_installation_page.dart';
 
 part 'home_page.dart'; // 声明 home_page.dart 是本文件的一部分
 part 'features_page.dart'; // 声明 features_page.dart 是本文件的一部分

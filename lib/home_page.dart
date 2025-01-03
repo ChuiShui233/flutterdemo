@@ -93,7 +93,7 @@ class HomePage extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.6), // 黑色半透明背景
+                    color: Colors.black.withValues(alpha: 0.5), // 黑色半透明背景
                   ),
                   child: const Text(
                     'v1.0.0',
@@ -113,6 +113,16 @@ class HomePage extends StatelessWidget {
     final textStyle = TextStyle(color: onSurfaceVariantColor);
     final titleStyle =
         TextStyle(fontWeight: FontWeight.bold, color: onSurfaceVariantColor);
+
+    String dartVersion = Platform.version;
+    String environment = '';
+    if (kDebugMode) {
+      environment = '开发 (Debug)';
+    } else if (kProfileMode) {
+      environment = '测试 (Profile)';
+    } else {
+      environment = '发布 (Release)';
+    }
 
     return AspectRatio(
       aspectRatio: 16 / 9, // 设置统一的长宽比
@@ -137,7 +147,7 @@ class HomePage extends StatelessWidget {
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.topLeft,
                 child: Text(
-                  'Flutter: 3.16.7',
+                  'Dart: $dartVersion',
                   style: textStyle,
                 ),
               ),
@@ -146,7 +156,7 @@ class HomePage extends StatelessWidget {
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.topLeft,
                 child: Text(
-                  '编译时间： ${DateTime.now()}',
+                  '编译时间： $buildTime', // 使用生成的 buildTime
                   style: textStyle,
                 ),
               ),
@@ -155,7 +165,16 @@ class HomePage extends StatelessWidget {
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.topLeft,
                 child: Text(
-                  kIsWeb ? '平台： Web' : '平台： Android',
+                  '环境： $environment',
+                  style: textStyle,
+                ),
+              ),
+              const SizedBox(height: 8),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.topLeft,
+                child: Text(
+                  kIsWeb ? '平台： Web' : '平台： ${Platform.operatingSystem}',
                   style: textStyle,
                 ),
               ),
