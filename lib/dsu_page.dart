@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as path;
+import 'package:url_launcher/url_launcher_string.dart';
 
 class DSUInstallationScreen extends StatefulWidget {
   const DSUInstallationScreen({super.key});
@@ -14,19 +15,18 @@ class DSUInstallationScreen extends StatefulWidget {
 
 class _DSUInstallationScreenState extends State<DSUInstallationScreen> {
   bool _isRooted = false;
-  bool _continuedWithoutRoot = false; // New state to track if user continued without root
-  bool _isFirstLaunch = true; // Replace with actual first launch check logic
+  bool _continuedWithoutRoot = false;
   String? _selectedInstallationMode;
   String? _selectedFilePath;
   bool _configureUserSpace = false;
   String _userSpaceSize = '';
-  int _remainingStorageGB = 0; // Placeholder for remaining storage
+  int _remainingStorageGB = 0;
 
   @override
   void initState() {
     super.initState();
     _checkRootStatus();
-    _calculateRemainingStorage(); // Simulate storage calculation
+    _calculateRemainingStorage();
   }
 
   Future<void> _checkRootStatus() async {
@@ -43,13 +43,9 @@ class _DSUInstallationScreenState extends State<DSUInstallationScreen> {
     }
   }
 
-  // Placeholder for calculating remaining storage
   Future<void> _calculateRemainingStorage() async {
-    // In a real application, you would use platform channels or a plugin
-    // to get the actual remaining storage.
-    // This is just a simulation.
     setState(() {
-      _remainingStorageGB = 50; // Example: 50 GB remaining
+      _remainingStorageGB = 50;
     });
   }
 
@@ -60,8 +56,6 @@ class _DSUInstallationScreenState extends State<DSUInstallationScreen> {
       setState(() {
         _selectedFilePath = result.files.single.path;
       });
-    } else {
-      // User canceled the picker
     }
   }
 
@@ -181,21 +175,23 @@ class _DSUInstallationScreenState extends State<DSUInstallationScreen> {
                 const Text('启用用户空间配置'),
                 Switch(
                   value: _configureUserSpace,
-                  onChanged: _isRooted || _continuedWithoutRoot ? (value) {
-                    setState(() {
-                      _configureUserSpace = value;
-                      if (!value) {
-                        _userSpaceSize = '';
-                      }
-                    });
-                  } : null, // Disable if no root and didn't continue
+                  onChanged: _isRooted || _continuedWithoutRoot
+                      ? (value) {
+                          setState(() {
+                            _configureUserSpace = value;
+                            if (!value) {
+                              _userSpaceSize = '';
+                            }
+                          });
+                        }
+                      : null,
                 ),
               ],
             ),
             if (_configureUserSpace) ...[
               const SizedBox(height: 16),
               TextField(
-                enabled: _isRooted || _continuedWithoutRoot, // Disable if no root and didn't continue
+                enabled: _isRooted || _continuedWithoutRoot,
                 keyboardType: TextInputType.number,
                 inputFormatters: <TextInputFormatter>[
                   FilteringTextInputFormatter.digitsOnly
@@ -236,19 +232,20 @@ class _DSUInstallationScreenState extends State<DSUInstallationScreen> {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Dynamic System Updates (DSU) 允许您在不刷写设备系统分区的情况下尝试新的 Android 系统镜像。',
+              '动态系统更新 (DSU) 是 Android 10 中引入的一项系统功能,允许您在不刷写设备系统分区的情况下尝试新的 Android 系统镜像。',
             ),
             const SizedBox(height: 16),
             Align(
               alignment: Alignment.bottomRight,
               child: TextButton(
                 onPressed: () async {
-                  // Open file picker to select a file for "了解更多"
-                  FilePickerResult? result =
-                      await FilePicker.platform.pickFiles();
-                  if (result != null) {
-                    // You can do something with the selected file here
-                    print('Selected file for DSU info: ${result.files.single.path}');
+                  const url = 'https://developer.android.google.cn/topic/dsu'; // 替换成你的 DSU 信息网页链接
+                  if (await canLaunchUrlString(url)) {
+                    await launchUrlString(url);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('无法打开链接')),
+                    );
                   }
                 },
                 child: const Text('详细了解'),
@@ -272,8 +269,9 @@ class _DSUInstallationScreenState extends State<DSUInstallationScreen> {
             ? SingleChildScrollView(
                 child: Column(
                   children: [
-                    if (_isFirstLaunch) _buildInstallationModeCard(),
-                    if (!_isFirstLaunch || _selectedInstallationMode != null)
+                    if (_selectedInstallationMode == null)
+                      _buildInstallationModeCard(),
+                    if (_selectedInstallationMode != null)
                       _buildInstallationModeCard(),
                     const SizedBox(height: 16),
                     _buildConfigureUserSpaceCard(),
