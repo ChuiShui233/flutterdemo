@@ -144,6 +144,48 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
+  // 通用的显示模糊遮罩的方法
+  Future<T?> _showBlurredDialog<T>({
+    required BuildContext context,
+    required WidgetBuilder builder,
+    bool useRootNavigator = true,
+    bool barrierDismissible = true,
+    RouteSettings? routeSettings,
+    Offset? anchorPoint,
+  }) {
+    return showGeneralDialog(
+      context: context,
+      useRootNavigator: useRootNavigator,
+      barrierDismissible: barrierDismissible,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 200),
+      pageBuilder: (context, animation, secondaryAnimation) => Stack(
+        children: [
+          if (_useBlurEffect)
+            BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: _blurIntensity, sigmaY: _blurIntensity),
+              child: FadeTransition(
+                opacity: animation,
+                child: Container(
+                  color: Colors.transparent, // 保持透明，让模糊效果可见
+                ),
+              ),
+            ),
+          FadeTransition(
+            opacity: animation,
+            child: Builder(builder: builder),
+          ),
+        ],
+      ),
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return child;
+      },
+      routeSettings: routeSettings,
+      anchorPoint: anchorPoint,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -242,6 +284,7 @@ class _MainScreenState extends State<MainScreen> {
   static const List<Widget> _widgetOptions = <Widget>[
     HomePage(),
     FeaturesPage(),
+    SettingsPage(),
   ];
 
   @override
@@ -255,8 +298,6 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
-  // 通用的显示模糊遮罩的方法
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -265,25 +306,23 @@ class _MainScreenState extends State<MainScreen> {
         elevation: 4.0,
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: IconButton(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: PopupMenuButton<String>(
               icon: const Icon(Icons.settings),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  PageRouteBuilder(
-                    opaque: false,
-                    pageBuilder: (BuildContext context, _, __) =>
-                        _buildBlurredOverlay(const SettingsPage()),
-                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                      return FadeTransition(
-                        opacity: animation,
-                        child: child,
-                      );
-                    },
-                  ),
-                );
+              onSelected: (String result) {
+                if (result == 'settings') {
+                  context.findAncestorStateOfType<_MyAppState>()?._showBlurredDialog(
+                    context: context,
+                    builder: (context) => const SettingsPage(),
+                  );
+                }
               },
+              itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                const PopupMenuItem<String>(
+                  value: 'settings',
+                  child: Text('设置'),
+                ),
+              ],
             ),
           ),
         ],
@@ -297,6 +336,26 @@ class _MainScreenState extends State<MainScreen> {
           );
         },
         child: _widgetOptions.elementAt(_selectedIndex),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          context.findAncestorStateOfType<_MyAppState>()?._showBlurredDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('这是一个弹窗'),
+              content: const Text('这个弹窗使用了模糊遮罩。'),
+              actions: <Widget>[
+                TextButton(
+                  child: const Text('关闭'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+        child: const Icon(Icons.add),
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
@@ -317,28 +376,6 @@ class _MainScreenState extends State<MainScreen> {
         type: BottomNavigationBarType.fixed,
         onTap: _onItemTapped,
       ),
-    );
-  }
-
-  Widget _buildBlurredOverlay(Widget page) {
-    return Stack(
-      children: [
-        if (widget.useBlurEffect)
-          ModalBarrier(
-            color: Colors.transparent,
-          ),
-        if (widget.useBlurEffect)
-          BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: widget.blurIntensity, sigmaY: widget.blurIntensity), // 使用模糊强度
-            child: Container(
-              color: Colors.black.withOpacity(0.2), // 调整透明度以获得更好的模糊效果
-            ),
-          ),
-        FadeTransition( // 添加 FadeTransition 以实现淡入效果
-          opacity: ModalRoute.of(context)!.animation!,
-          child: page,
-        ),
-      ],
     );
   }
 }
@@ -410,8 +447,8 @@ class _SettingsPageState extends State<SettingsPage> {
     _blurIntensity = myAppState?._blurIntensity ?? 5.0;
   }
 
-  void _showVersionDialog(BuildContext context) {
-    showDialog(
+     void _showVersionDialog() {
+     context.findAncestorStateOfType<_MyAppState>()?._showBlurredDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
@@ -562,7 +599,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           ListTile(
             title: const Text('版本检查'),
-            onTap: () => _showVersionDialog(context), // 传递 context
+            onTap: _showVersionDialog,
           ),
         ],
       ),
