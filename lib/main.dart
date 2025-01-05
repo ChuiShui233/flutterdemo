@@ -35,13 +35,24 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyAppState extends State<MyApp> with TickerProviderStateMixin {
   ThemeModeOption _themeMode = ThemeModeOption.system;
   Color _monetSeedColor = Colors.blue;
   bool _useDynamicColor = false;
   bool _useBlurEffect = false;
   double _borderRadius = 12.0;
   double _blurIntensity = 5.0; // 新增模糊强度
+
+  // 动画相关的控制器
+  late final AnimationController _blurFadeController = AnimationController(
+    duration: const Duration(milliseconds: 200),
+    vsync: this,
+  );
+  late final Animation<double> _blurFadeAnimation = CurvedAnimation(
+    parent: _blurFadeController,
+    curve: Curves.easeInOut,
+  );
+
   static final DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
 
   @override
@@ -51,11 +62,18 @@ class _MyAppState extends State<MyApp> {
     _checkAndroidVersion();
   }
 
+  @override
+  void dispose() {
+    _blurFadeController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _themeMode = ThemeModeOption.values[prefs.getInt('themeMode') ?? 0];
-      _monetSeedColor = Color(prefs.getInt('monetSeedColor') ?? Colors.blue.value);
+      int? savedColor = prefs.getInt('monetSeedColor');
+      _monetSeedColor = savedColor != null ? Color(savedColor) : Colors.blue;
       _useDynamicColor = prefs.getBool('useDynamicColor') ?? false;
       _useBlurEffect = prefs.getBool('useBlurEffect') ?? false;
       _borderRadius = prefs.getDouble('borderRadius') ?? 12.0;
@@ -127,13 +145,12 @@ class _MyAppState extends State<MyApp> {
     _saveSettings();
   }
 
-    void _changeBlurIntensity(double value) {
+  void _changeBlurIntensity(double value) {
     setState(() {
       _blurIntensity = value;
     });
     _saveSettings();
   }
-  
 
   void _resetSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -168,6 +185,9 @@ class _MyAppState extends State<MyApp> {
             borderRadius: BorderRadius.circular(_borderRadius),
           ),
         ),
+        sliderTheme: SliderThemeData(
+          thumbShape: SliderComponentShape.noThumb, // 移除滑块上的圆点
+        ),
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
@@ -178,6 +198,9 @@ class _MyAppState extends State<MyApp> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(_borderRadius),
           ),
+        ),
+        sliderTheme: SliderThemeData(
+          thumbShape: SliderComponentShape.noThumb, // 移除滑块上的圆点
         ),
       ),
       home: const AppEntry(),
@@ -217,19 +240,16 @@ class _AppEntryState extends State<AppEntry> {
     if (_isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     } else {
+      final myAppState = context.findAncestorStateOfType<_MyAppState>()!;
       return _isWelcomeShown
-          ? _buildMainScreen(context) // 使用 _buildMainScreen 方法
+          ? MainScreen(
+              useBlurEffect: myAppState._useBlurEffect,
+              borderRadius: myAppState._borderRadius,
+              blurIntensity: myAppState._blurIntensity,
+              blurFadeAnimation: myAppState._blurFadeAnimation, // 传递动画
+            )
           : const WelcomeScreen();
     }
-  }
-
-  Widget _buildMainScreen(BuildContext context) {
-    final myAppState = context.findAncestorStateOfType<_MyAppState>();
-    return MainScreen(
-      useBlurEffect: myAppState?._useBlurEffect ?? false,
-      borderRadius: myAppState?._borderRadius ?? 12.0,
-       blurIntensity: myAppState?._blurIntensity ?? 5.0, // 传递模糊强度
-    );
   }
 }
 
@@ -237,16 +257,33 @@ class MainScreen extends StatefulWidget {
   final bool useBlurEffect;
   final double borderRadius;
   final double blurIntensity; // 新增模糊强度
+  final Animation<double> blurFadeAnimation; // 接收动画
 
-  const MainScreen({super.key, required this.useBlurEffect, required this.borderRadius, required this.blurIntensity});
+  const MainScreen({
+    super.key,
+    required this.useBlurEffect,
+    required this.borderRadius,
+    required this.blurIntensity,
+    required this.blurFadeAnimation, // 接收动画
+  });
 
   @override
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   int _selectedIndex = 0;
-  bool _isBlurActive = false;
+  int _previousIndex = 0; // 添加上一个索引
+
+  // 动画相关的控制器
+  late final AnimationController _blurController = AnimationController(
+    duration: const Duration(milliseconds: 300),
+    vsync: this,
+  );
+  late final Animation<double> _blurAnimation = CurvedAnimation(
+    parent: _blurController,
+    curve: Curves.easeInOut,
+  );
 
   static const List<Widget> _widgetOptions = <Widget>[
     HomePage(),
@@ -259,56 +296,67 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
   }
 
+  @override
+  void dispose() {
+    _blurController.dispose();
+    super.dispose();
+  }
+
   void _onItemTapped(int index) {
-    if (index == 2) {
-      _showBlurredSettingsPage();
-    } else {
-      setState(() {
-        _selectedIndex = index;
-      });
-    }
+    setState(() {
+      _previousIndex = _selectedIndex; // 记录上一个索引
+      _selectedIndex = index;
+    });
   }
 
   void _showBlurredSettingsPage() {
-    setState(() {
-      _isBlurActive = true;
-    });
+    _blurController.forward(from: 0.0); // 启动模糊进入动画
     Navigator.push(
       context,
       PageRouteBuilder(
         opaque: false,
+        barrierDismissible: true, // 点击背景关闭
+        barrierColor: Colors.black.withAlpha((0.2 * 255).toInt()),
         pageBuilder: (BuildContext context, _, __) =>
             _buildBlurredOverlay(const SettingsPage()),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(
-            opacity: animation,
-            child: child,
+          // 使用 ScaleTransition 添加缩放效果
+          return ScaleTransition(
+            scale: animation,
+            child: FadeTransition(
+              opacity: animation,
+              child: child,
+            ),
           );
         },
+        transitionDuration: const Duration(milliseconds: 300),
+        reverseTransitionDuration: const Duration(milliseconds: 300),
       ),
     ).then((value) {
-      setState(() {
-        _isBlurActive = false;
-      });
+      _blurController.reverse(from: 1.0); // 启动模糊退出动画
     });
   }
 
   Widget _buildBlurredOverlay(Widget page) {
-    return Stack(
-      children: [
-        if (widget.useBlurEffect)
-          ModalBarrier(
-            color: Colors.transparent,
-          ),
-        if (widget.useBlurEffect)
-          BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: widget.blurIntensity, sigmaY: widget.blurIntensity), // 使用模糊强度
-            child: Container(
-              color: Colors.black.withValues(alpha: 0.2),
+    return FadeTransition(
+      opacity: _blurAnimation,
+      child: Stack(
+        children: [
+          if (widget.useBlurEffect)
+            const ModalBarrier(
+              color: Colors.transparent,
             ),
-          ),
-        page,
-      ],
+          if (widget.useBlurEffect)
+            BackdropFilter(
+              filter: ImageFilter.blur(
+                  sigmaX: widget.blurIntensity, sigmaY: widget.blurIntensity), // 使用模糊强度
+              child: Container(
+                color: Colors.black.withAlpha((0.2 * _blurAnimation.value * 255).toInt()), // 动画控制透明度
+              ),
+            ),
+          page,
+        ],
+      ),
     );
   }
 
@@ -341,20 +389,30 @@ class _MainScreenState extends State<MainScreen> {
       body: Stack(
         children: [
           AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
+            duration: const Duration(milliseconds: 500),
             transitionBuilder: (Widget child, Animation<double> animation) {
-              return FadeTransition(
-                opacity: animation,
+              final inAnimation = Tween<Offset>(begin: const Offset(1.0, 0.0), end: Offset.zero)
+                  .animate(animation);
+              final outAnimation = Tween<Offset>(begin: Offset.zero, end: const Offset(-1.0, 0.0))
+                  .animate(ReverseAnimation(animation));
+
+              return SlideTransition(
+                position: _selectedIndex < _previousIndex ? inAnimation : outAnimation,
                 child: child,
               );
             },
             child: _widgetOptions.elementAt(_selectedIndex),
           ),
-          if (_isBlurActive && widget.useBlurEffect)
-            BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: widget.blurIntensity, sigmaY: widget.blurIntensity), // 使用模糊强度
-              child: Container(
-                color: Colors.black.withValues(alpha: 0.1),
+          // 全局模糊遮罩
+          if (widget.useBlurEffect)
+            FadeTransition(
+              opacity: widget.blurFadeAnimation,
+              child: BackdropFilter(
+                filter: ImageFilter.blur(
+                    sigmaX: widget.blurIntensity, sigmaY: widget.blurIntensity),
+                child: Container(
+                  color: Colors.transparent, // 全局模糊层不需要额外的颜色
+                ),
               ),
             ),
         ],
@@ -371,7 +429,7 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
         currentIndex: _selectedIndex,
-        selectedItemColor: Theme.of(context).colorScheme.primary,
+        selectedItemColor: Colors.transparent,
         unselectedItemColor: Colors.grey,
         showSelectedLabels: true,
         showUnselectedLabels: true,
@@ -400,7 +458,6 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _useBlurEffect = false;
   double _borderRadius = 12.0;
   double _blurIntensity = 5.0; // 新增模糊强度
-
 
   @override
   void initState() {
@@ -438,10 +495,22 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _loadPackageInfo() async {
-    final info = await PackageInfo.fromPlatform();
-    setState(() {
-      _packageInfo = info;
-    });
+    if (!kIsWeb) {
+      try {
+        final info = await PackageInfo.fromPlatform();
+        setState(() {
+          _packageInfo = info;
+        });
+      } catch (e) {
+        setState(() {
+          _packageInfo = null;
+        });
+      }
+    } else {
+      setState(() {
+        _packageInfo = null;
+      });
+    }
   }
 
   void _loadCurrentTheme() {
@@ -525,7 +594,7 @@ class _SettingsPageState extends State<SettingsPage> {
               },
             ),
           if (!_isAndroid12Plus)
-             ListTile(
+            ListTile(
               title: const Text('选择主题颜色'),
               trailing: CircleAvatar(
                 backgroundColor: _selectedMonetColor,
@@ -537,29 +606,29 @@ class _SettingsPageState extends State<SettingsPage> {
                   builder: (BuildContext context) {
                     return AlertDialog(
                       title: const Text('选择主题颜色'),
-                       content: SingleChildScrollView(
-                          child: ColorPicker(
-                           pickerColor: _selectedMonetColor,
-                           onColorChanged: (Color color) {
+                      content: SingleChildScrollView(
+                        child: ColorPicker(
+                          pickerColor: _selectedMonetColor,
+                          onColorChanged: (Color color) {
                             setState(() => _selectedMonetColor = color);
                             myAppState?._changeMonetSeedColor(color);
-                           },
-                         pickerAreaHeightPercent: 0.8,
-                         ),
+                          },
+                          pickerAreaHeightPercent: 0.8,
                         ),
+                      ),
                       actions: <Widget>[
-                         ElevatedButton(
-                           child: const Text('完成'),
-                           onPressed: () {
+                        ElevatedButton(
+                          child: const Text('完成'),
+                          onPressed: () {
                             Navigator.of(context).pop();
-                           },
-                         ),
-                       ],
-                     );
-                    },
-                   );
-                },
-              ),
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
           SwitchListTile(
             title: const Text('开启全局模糊效果'),
             value: _useBlurEffect,
@@ -570,13 +639,13 @@ class _SettingsPageState extends State<SettingsPage> {
               myAppState?._toggleBlurEffect(value);
             },
           ),
-           ListTile(
+          ListTile(
             title: const Text('调整模糊强度'),
-              subtitle: Slider(
-                  value: _blurIntensity,
-                min: 0,
-                max: 15,
-                onChanged: (value) {
+            subtitle: Slider(
+              value: _blurIntensity,
+              min: 0,
+              max: 15,
+              onChanged: (value) {
                 setState(() {
                   _blurIntensity = value;
                 });
@@ -611,7 +680,7 @@ class _SettingsPageState extends State<SettingsPage> {
             title: const Text('关于'),
             subtitle: _packageInfo != null
                 ? Text('版本: ${_packageInfo!.version}')
-                : const Text('加载版本信息中...'),
+                : const Text('错误版本'), // 无法获取时显示 "错误版本"
             onTap: () {
               Navigator.push(
                 context,
