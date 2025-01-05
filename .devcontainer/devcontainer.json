@@ -1,0 +1,19 @@
+{
+  "name": "Flutter Development Environment",
+  "image": "mcr.microsoft.com/vscode/devcontainers/base:ubuntu",  // 使用基础的 Ubuntu 镜像
+  "extensions": [
+    "dart-code.flutter",  // Flutter 扩展
+    "dart-code.dart"      // Dart 扩展
+  ],
+  "settings": {
+    "terminal.integrated.shell.linux": "/bin/bash",  // 设置终端为 bash
+    "dart.sdkPath": "/usr/lib/flutter/bin/cache/dart-sdk"  // 配置 Dart SDK 路径
+  },
+  "postCreateCommand": "flutter doctor",  // 创建容器后运行 flutter doctor，检查环境配置
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/workspace,type=bind"  // 挂载项目文件夹
+  ],
+  "forwardPorts": [8080],  // 转发端口（如果需要）
+  "remoteUser": "vscode",  // 使用 vscode 用户
+  "workspaceFolder": "/workspace"  // 设置工作空间目录
+}
