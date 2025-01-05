@@ -120,20 +120,12 @@ class _MyAppState extends State<MyApp> {
     _saveSettings();
   }
 
-  void _changeBorderRadius(double value) {
-    setState(() {
-      _borderRadius = value;
-    });
-    _saveSettings();
-  }
-
     void _changeBlurIntensity(double value) {
     setState(() {
       _blurIntensity = value;
     });
     _saveSettings();
   }
-  
 
   void _resetSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -246,7 +238,6 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-  bool _isBlurActive = false;
 
   static const List<Widget> _widgetOptions = <Widget>[
     HomePage(),
@@ -260,55 +251,50 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _onItemTapped(int index) {
-    if (index == 2) {
-      _showBlurredSettingsPage();
-    } else {
-      setState(() {
-        _selectedIndex = index;
-      });
-    }
-  }
-
-  void _showBlurredSettingsPage() {
     setState(() {
-      _isBlurActive = true;
-    });
-    Navigator.push(
-      context,
-      PageRouteBuilder(
-        opaque: false,
-        pageBuilder: (BuildContext context, _, __) =>
-            _buildBlurredOverlay(const SettingsPage()),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
-        },
-      ),
-    ).then((value) {
-      setState(() {
-        _isBlurActive = false;
-      });
+      _selectedIndex = index;
     });
   }
 
-  Widget _buildBlurredOverlay(Widget page) {
-    return Stack(
-      children: [
-        if (widget.useBlurEffect)
-          ModalBarrier(
-            color: Colors.transparent,
-          ),
-        if (widget.useBlurEffect)
-          BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: widget.blurIntensity, sigmaY: widget.blurIntensity), // 使用模糊强度
-            child: Container(
-              color: Colors.black.withValues(alpha: 0.2),
+  // 通用的显示模糊遮罩的方法
+  Future<T?> _showBlurredDialog<T>({
+    required BuildContext context,
+    required WidgetBuilder builder,
+    bool useRootNavigator = true,
+    bool barrierDismissible = true,
+    RouteSettings? routeSettings,
+    Offset? anchorPoint,
+  }) {
+    return showGeneralDialog(
+      context: context,
+      useRootNavigator: useRootNavigator,
+      barrierDismissible: barrierDismissible,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 200),
+      pageBuilder: (context, animation, secondaryAnimation) => Stack(
+        children: [
+          if (widget.useBlurEffect)
+            BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: widget.blurIntensity, sigmaY: widget.blurIntensity),
+              child: FadeTransition(
+                opacity: animation,
+                child: Container(
+                  color: Colors.transparent, // 保持透明，让模糊效果可见
+                ),
+              ),
             ),
+          FadeTransition(
+            opacity: animation,
+            child: Builder(builder: builder),
           ),
-        page,
-      ],
+        ],
+      ),
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return child;
+      },
+      routeSettings: routeSettings,
+      anchorPoint: anchorPoint,
     );
   }
 
@@ -325,7 +311,10 @@ class _MainScreenState extends State<MainScreen> {
               icon: const Icon(Icons.settings),
               onSelected: (String result) {
                 if (result == 'settings') {
-                  _showBlurredSettingsPage();
+                  _showBlurredDialog(
+                    context: context,
+                    builder: (context) => const SettingsPage(),
+                  );
                 }
               },
               itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
@@ -338,26 +327,35 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            transitionBuilder: (Widget child, Animation<double> animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            child: _widgetOptions.elementAt(_selectedIndex),
-          ),
-          if (_isBlurActive && widget.useBlurEffect)
-            BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: widget.blurIntensity, sigmaY: widget.blurIntensity), // 使用模糊强度
-              child: Container(
-                color: Colors.black.withValues(alpha: 0.1),
-              ),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        },
+        child: _widgetOptions.elementAt(_selectedIndex),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          _showBlurredDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('这是一个弹窗'),
+              content: const Text('这个弹窗使用了模糊遮罩。'),
+              actions: <Widget>[
+                TextButton(
+                  child: const Text('关闭'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
             ),
-        ],
+          );
+        },
+        child: const Icon(Icons.add),
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
@@ -398,9 +396,7 @@ class _SettingsPageState extends State<SettingsPage> {
   static final DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
   bool _useDynamicColor = false;
   bool _useBlurEffect = false;
-  double _borderRadius = 12.0;
   double _blurIntensity = 5.0; // 新增模糊强度
-
 
   @override
   void initState() {
@@ -423,8 +419,6 @@ class _SettingsPageState extends State<SettingsPage> {
             _useBlurEffect =
                 (context.findAncestorStateOfType<_MyAppState>()?._useBlurEffect) ??
                     false;
-            _borderRadius =
-                (context.findAncestorStateOfType<_MyAppState>()?._borderRadius) ?? 12.0;
             _blurIntensity =
                 (context.findAncestorStateOfType<_MyAppState>()?._blurIntensity) ?? 5.0;
           });
@@ -450,7 +444,6 @@ class _SettingsPageState extends State<SettingsPage> {
     _selectedMonetColor = myAppState?._monetSeedColor ?? Colors.blue;
     _useDynamicColor = myAppState?._useDynamicColor ?? false;
     _useBlurEffect = myAppState?._useBlurEffect ?? false;
-    _borderRadius = myAppState?._borderRadius ?? 12.0;
     _blurIntensity = myAppState?._blurIntensity ?? 5.0;
   }
 
@@ -585,22 +578,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             trailing: Text(_blurIntensity.toStringAsFixed(1)),
           ),
-          ListTile(
-            title: const Text('调整圆角大小'),
-            subtitle: Slider(
-              value: _borderRadius,
-              min: 0,
-              max: 30,
-              onChanged: (value) {
-                setState(() {
-                  _borderRadius = value;
-                });
-                myAppState?._changeBorderRadius(value);
-              },
-            ),
-            trailing: Text(_borderRadius.toStringAsFixed(1)),
-          ),
-          const Divider(),
+                  const Divider(),
           ListTile(
             title: const Text('恢复默认设置'),
             onTap: () {
@@ -682,21 +660,14 @@ class AboutPage extends StatelessWidget {
             ),
             ListTile(
               title: const Text(
-                'Device Info Plus',
+                "ShuiYue's blog",
                 textAlign: TextAlign.center,
               ),
-              onTap: () => _launchURL('https://pub.dev/packages/device_info_plus'),
-            ),
-            ListTile(
-              title: const Text(
-                'Flutter Color Picker',
-                textAlign: TextAlign.center,
-              ),
-              onTap: () => _launchURL('https://pub.dev/packages/flutter_colorpicker'),
+              onTap: () => _launchURL('https://cc12.eu.org/'),
             ),
             if (kDebugMode)
               const Text(
-                '当前为 Debug 模式',
+                '当前为 Release 模式',
                 style: TextStyle(color: Colors.red),
               ),
           ],
