@@ -159,7 +159,7 @@ class _MyAppState extends State<MyApp> {
       barrierDismissible: barrierDismissible,
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
       barrierColor: Colors.black54,
-      transitionDuration: const Duration(milliseconds: 200),
+      transitionDuration: const Duration(milliseconds: 400), // 遮罩出现速度更平缓
       pageBuilder: (context, animation, secondaryAnimation) => Stack(
         children: [
           if (_useBlurEffect)
@@ -337,26 +337,7 @@ class _MainScreenState extends State<MainScreen> {
         },
         child: _widgetOptions.elementAt(_selectedIndex),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          context.findAncestorStateOfType<_MyAppState>()?._showBlurredDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('这是一个弹窗'),
-              content: const Text('这个弹窗使用了模糊遮罩。'),
-              actions: <Widget>[
-                TextButton(
-                  child: const Text('关闭'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ],
-            ),
-          );
-        },
-        child: const Icon(Icons.add),
-      ),
+      // 移除悬浮按钮
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
@@ -397,6 +378,7 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _useDynamicColor = false;
   bool _useBlurEffect = false;
   double _blurIntensity = 5.0; // 新增模糊强度
+// 控制调色盘显示
 
   @override
   void initState() {
@@ -421,6 +403,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     false;
             _blurIntensity =
                 (context.findAncestorStateOfType<_MyAppState>()?._blurIntensity) ?? 5.0;
+// 初始化调色盘显示状态
           });
         }
       } catch (e) {
@@ -445,6 +428,7 @@ class _SettingsPageState extends State<SettingsPage> {
     _useDynamicColor = myAppState?._useDynamicColor ?? false;
     _useBlurEffect = myAppState?._useBlurEffect ?? false;
     _blurIntensity = myAppState?._blurIntensity ?? 5.0;
+// 初始化调色盘显示状态
   }
 
      void _showVersionDialog() {
@@ -513,11 +497,12 @@ class _SettingsPageState extends State<SettingsPage> {
               onChanged: (bool value) {
                 setState(() {
                   _useDynamicColor = value;
+// 当关闭莫奈取色时显示调色盘
                 });
                 myAppState?._toggleDynamicColor(value);
               },
             ),
-          if (!_isAndroid12Plus)
+          if (!_isAndroid12Plus || (_isAndroid12Plus && !_useDynamicColor)) // 当关闭莫奈取色时显示调色盘
              ListTile(
               title: const Text('选择主题颜色'),
               trailing: CircleAvatar(

@@ -24,67 +24,21 @@ class FeaturesPage extends StatelessWidget {
   List<Widget> _buildFeatureCards(BuildContext context) {
     final cardData = [
       {
-        'icon': Icons.all_inclusive,
+        'icon': Icons.download_rounded,
         'title': 'DSU安装',
         'description': '快速安装，下载镜像',
       },
       {
         'icon': Icons.settings,
-        'title': '系统设置',
-        'description': '更改系统设置',
+        'title': '系统修改',
+        'description': '更改定制系统设置',
       },
       {
-        'icon': Icons.storage,
-        'title': '存储管理',
-        'description': '管理存储空间',
-      },
-      {
-        'icon': Icons.security,
-        'title': '安全',
-        'description': '保护您的设备',
-      },
-       {
-        'icon': Icons.adb,
-        'title': 'ADB',
-        'description': '高级调试工具',
-      },
-      {
-        'icon': Icons.network_cell,
-        'title': '网络',
-        'description': '配置网络连接',
-      },
-      {
-        'icon': Icons.update,
-        'title': '系统更新',
-        'description': '检查系统更新',
-      },
-      {
-        'icon': Icons.phonelink_setup,
-        'title': '设备管理',
-        'description': '管理您的设备',
-      },
-      {
-        'icon': Icons.developer_mode,
-        'title': '开发者选项',
-        'description': '访问开发者选项',
-      },
-       {
-        'icon': Icons.brush,
-        'title': '主题',
-        'description': '自定义界面主题',
-      },
-      {
-        'icon': Icons.notifications,
-        'title': '通知管理',
-        'description': '管理通知',
-      },
-      {
-        'icon': Icons.accessibility,
-        'title': '辅助功能',
-        'description': '设置辅助功能选项',
+        'icon': Icons.palette,
+        'title': '主题安装',
+        'description': '用于ColorOS主题强制安装',
       },
     ];
-
 
     return cardData.asMap().entries.map((entry) {
       int index = entry.key;
