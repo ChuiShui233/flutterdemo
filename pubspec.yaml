@@ -43,7 +43,6 @@ flutter:
   uses-material-design: true #添加 material支持
   assets:
   - assets/images/
-  - assets/images/home.png
   fonts:
   - family: Customized # 字体名称
     fonts:
