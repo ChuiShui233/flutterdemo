@@ -18,14 +18,6 @@ class EasterEggPage extends StatelessWidget {
               '🎉🎉🎉',
               style: TextStyle(fontSize: 80),
             ),
-            const SizedBox(height: 20),
-                      const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // 返回上一页
-              },
-              child: const Text('返回'),
-            ),
           ],
         ),
       ),

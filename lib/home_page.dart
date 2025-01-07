@@ -147,7 +147,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                         borderRadius: BorderRadius.circular(8),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              vertical: 4, horizontal: 8),
+                              vertical: 4, horizontal: 8), 
                           decoration: BoxDecoration(
                             color: Colors.black.withOpacity(0.5), // 黑色半透明背景
                           ),

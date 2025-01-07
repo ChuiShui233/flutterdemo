@@ -9,10 +9,10 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:ui';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:salomon_bottom_bar/salomon_bottom_bar.dart'; // 导入 salomon_bottom_bar 库
 
 import 'welcome.dart'; // 导入 welcome.dart
 import 'dart:io';
-
 import 'dsu_page.dart';
 
 part 'home_page.dart'; // 声明 home_page.dart 是本文件的一部分
@@ -121,7 +121,7 @@ class _MyAppState extends State<MyApp> {
     _saveSettings();
   }
 
-    void _changeBlurIntensity(double value) {
+  void _changeBlurIntensity(double value) {
     setState(() {
       _blurIntensity = value;
     });
@@ -160,7 +160,7 @@ class _MyAppState extends State<MyApp> {
       barrierDismissible: barrierDismissible,
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
       barrierColor: Colors.black54,
-      transitionDuration: const Duration(milliseconds: 400), // 遮罩出现速度更平缓
+      transitionDuration: const Duration(milliseconds: 300), // 遮罩出现速度更平缓
       pageBuilder: (context, animation, secondaryAnimation) => Stack(
         children: [
           if (_useBlurEffect)
@@ -263,7 +263,7 @@ class _AppEntryState extends State<AppEntry> {
     return MainScreen(
       useBlurEffect: myAppState?._useBlurEffect ?? false,
       borderRadius: myAppState?._borderRadius ?? 12.0,
-       blurIntensity: myAppState?._blurIntensity ?? 5.0, // 传递模糊强度
+      blurIntensity: myAppState?._blurIntensity ?? 5.0, // 传递模糊强度
     );
   }
 }
@@ -273,7 +273,12 @@ class MainScreen extends StatefulWidget {
   final double borderRadius;
   final double blurIntensity; // 新增模糊强度
 
-  const MainScreen({super.key, required this.useBlurEffect, required this.borderRadius, required this.blurIntensity});
+  const MainScreen({
+    super.key,
+    required this.useBlurEffect,
+    required this.borderRadius,
+    required this.blurIntensity,
+  });
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -319,45 +324,84 @@ class _MainScreenState extends State<MainScreen> {
                 }
               },
               itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                const PopupMenuItem<String>(
-                  value: 'settings',
-                  child: Text('设置'),
-                ),
               ],
             ),
           ),
         ],
       ),
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        transitionBuilder: (Widget child, Animation<double> animation) {
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
-        },
-        child: _widgetOptions.elementAt(_selectedIndex),
-      ),
-      // 移除悬浮按钮
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: '主页',
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: child,
+                );
+              },
+              child: _widgetOptions.elementAt(_selectedIndex),
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.build),
-            label: '功能',
-          ),
+          _buildBottomNavigationBar(),
         ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Theme.of(context).colorScheme.primary,
-        unselectedItemColor: Colors.grey,
-        showSelectedLabels: true,
-        showUnselectedLabels: true,
-        type: BottomNavigationBarType.fixed,
-        onTap: _onItemTapped,
       ),
+    );
+  }
+
+  Widget _buildBottomNavigationBar() {
+    final bottomBar = Padding(
+      padding: const EdgeInsets.all(18.0),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18.0),
+        child: widget.useBlurEffect
+            ? BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: widget.blurIntensity, sigmaY: widget.blurIntensity),
+                child: Container(
+                  color: Theme.of(context).bottomNavigationBarTheme.backgroundColor?.withOpacity(0.7) ?? 
+                      Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.7), 
+                  child: _buildSalomonBottomBar(),
+                ),
+              )
+            : Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).bottomNavigationBarTheme.backgroundColor ??
+                      Theme.of(context).colorScheme.surfaceVariant,
+                ),
+                child: _buildSalomonBottomBar(),
+              ),
+      ),
+    );
+
+    return Align(
+      alignment: Alignment.bottomCenter, // 始终在底部
+      child: SafeArea(
+        child: bottomBar,
+      ),
+    );
+  }
+
+  Widget _buildSalomonBottomBar() {
+    return SalomonBottomBar(
+      currentIndex: _selectedIndex,
+      onTap: _onItemTapped,
+      items: [
+        SalomonBottomBarItem(
+          icon: const Icon(Icons.home),
+          title: const Text("主页"),
+          selectedColor: Theme.of(context).colorScheme.primary,
+        ),
+        SalomonBottomBarItem(
+          icon: const Icon(Icons.build),
+          title: const Text("功能"),
+          selectedColor: Theme.of(context).colorScheme.primary,
+        ),
+        SalomonBottomBarItem(
+          icon: const Icon(Icons.settings),
+          title: const Text("设置"),
+          selectedColor: Theme.of(context).colorScheme.primary,
+        ),
+      ],
     );
   }
 }
@@ -379,7 +423,6 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _useDynamicColor = false;
   bool _useBlurEffect = false;
   double _blurIntensity = 5.0; // 新增模糊强度
-// 控制调色盘显示
 
   @override
   void initState() {
@@ -404,7 +447,6 @@ class _SettingsPageState extends State<SettingsPage> {
                     false;
             _blurIntensity =
                 (context.findAncestorStateOfType<_MyAppState>()?._blurIntensity) ?? 5.0;
-// 初始化调色盘显示状态
           });
         }
       } catch (e) {
@@ -429,16 +471,15 @@ class _SettingsPageState extends State<SettingsPage> {
     _useDynamicColor = myAppState?._useDynamicColor ?? false;
     _useBlurEffect = myAppState?._useBlurEffect ?? false;
     _blurIntensity = myAppState?._blurIntensity ?? 5.0;
-// 初始化调色盘显示状态
   }
 
-     void _showVersionDialog() {
-     context.findAncestorStateOfType<_MyAppState>()?._showBlurredDialog(
+  void _showVersionDialog() {
+    context.findAncestorStateOfType<_MyAppState>()?._showBlurredDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('版本警告'),
-          content: const Text('当前版本为测试版本，请注意使用。\n如有任何问题，请及时反馈。'),
+          content: const Text('当前版本为测试版本，可能存在一些问题和未完善功能。\n如有任何问题，请及时反馈。'),
           actions: <Widget>[
             TextButton(
               child: const Text('确定'),
@@ -498,13 +539,12 @@ class _SettingsPageState extends State<SettingsPage> {
               onChanged: (bool value) {
                 setState(() {
                   _useDynamicColor = value;
-// 当关闭莫奈取色时显示调色盘
                 });
                 myAppState?._toggleDynamicColor(value);
               },
             ),
-          if (!_isAndroid12Plus || (_isAndroid12Plus && !_useDynamicColor)) // 当关闭莫奈取色时显示调色盘
-             ListTile(
+          if (!_isAndroid12Plus || (_isAndroid12Plus && !_useDynamicColor))
+            ListTile(
               title: const Text('选择主题颜色'),
               trailing: CircleAvatar(
                 backgroundColor: _selectedMonetColor,
@@ -516,31 +556,31 @@ class _SettingsPageState extends State<SettingsPage> {
                   builder: (BuildContext context) {
                     return AlertDialog(
                       title: const Text('选择主题颜色'),
-                       content: SingleChildScrollView(
-                          child: ColorPicker(
-                           pickerColor: _selectedMonetColor,
-                           onColorChanged: (Color color) {
+                      content: SingleChildScrollView(
+                        child: ColorPicker(
+                          pickerColor: _selectedMonetColor,
+                          onColorChanged: (Color color) {
                             setState(() => _selectedMonetColor = color);
                             myAppState?._changeMonetSeedColor(color);
-                           },
-                         pickerAreaHeightPercent: 0.8,
-                         ),
+                          },
+                          pickerAreaHeightPercent: 0.8,
                         ),
+                      ),
                       actions: <Widget>[
-                         ElevatedButton(
-                           child: const Text('完成'),
-                           onPressed: () {
+                        ElevatedButton(
+                          child: const Text('完成'),
+                          onPressed: () {
                             Navigator.of(context).pop();
-                           },
-                         ),
-                       ],
-                     );
-                    },
-                   );
-                },
-              ),
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
           SwitchListTile(
-            title: const Text('开启全局模糊效果'),
+            title: const Text('开启底部全局模糊'),
             value: _useBlurEffect,
             onChanged: (bool value) {
               setState(() {
@@ -549,13 +589,13 @@ class _SettingsPageState extends State<SettingsPage> {
               myAppState?._toggleBlurEffect(value);
             },
           ),
-           ListTile(
-            title: const Text('调整模糊强度'),
-              subtitle: Slider(
-                  value: _blurIntensity,
-                min: 0,
-                max: 15,
-                onChanged: (value) {
+          ListTile(
+            title: const Text('调整全局模糊强度'),
+            subtitle: Slider(
+              value: _blurIntensity,
+              min: 0,
+              max: 15,
+              onChanged: (value) {
                 setState(() {
                   _blurIntensity = value;
                 });
@@ -564,7 +604,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             trailing: Text(_blurIntensity.toStringAsFixed(1)),
           ),
-                  const Divider(),
+          const Divider(),
           ListTile(
             title: const Text('恢复默认设置'),
             onTap: () {
@@ -627,7 +667,7 @@ class AboutPage extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             const Text(
-              '这是一个关于页面。',
+              '雾雨工具箱是一个针对Oplus设备的通用优化工具箱，我希望以开源的形式，让更多的人参与到这个项目的建设中来🤗',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 16),
             ),
