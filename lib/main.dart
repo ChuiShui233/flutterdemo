@@ -305,30 +305,15 @@ class _MainScreenState extends State<MainScreen> {
       _selectedIndex = index;
     });
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('水月共创'),
         elevation: 4.0,
+        // 移除 actions 属性中的 PopupMenuButton
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: PopupMenuButton<String>(
-              icon: const Icon(Icons.settings),
-              onSelected: (String result) {
-                if (result == 'settings') {
-                  context.findAncestorStateOfType<_MyAppState>()?._showBlurredDialog(
-                    context: context,
-                    builder: (context) => const SettingsPage(),
-                  );
-                }
-              },
-              itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-              ],
-            ),
-          ),
+          // 这里可以添加其他的 action，如果不需要任何 action，就保留空列表
         ],
       ),
       body: Stack(
@@ -350,7 +335,7 @@ class _MainScreenState extends State<MainScreen> {
       ),
     );
   }
-
+  
   Widget _buildBottomNavigationBar() {
     final bottomBar = Padding(
       padding: const EdgeInsets.all(18.0),
