@@ -11,6 +11,8 @@ import 'dart:ui';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:salomon_bottom_bar/salomon_bottom_bar.dart'; // 导入 salomon_bottom_bar 库
 
+import 'system_settings_page.dart'; // 导入系统修改页
+import 'theme_installation_page.dart'; // 导入主题安装页
 import 'welcome.dart'; // 导入 welcome.dart
 import 'dart:io';
 import 'dsu_page.dart';

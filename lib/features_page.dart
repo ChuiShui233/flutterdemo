@@ -20,7 +20,6 @@ class FeaturesPage extends StatelessWidget {
     );
   }
 
-
   List<Widget> _buildFeatureCards(BuildContext context) {
     final cardData = [
       {
@@ -62,9 +61,19 @@ class FeaturesPage extends StatelessWidget {
           child: GestureDetector(
             onTap: () {
               if (data['title'] == 'DSU安装') {
-                  Navigator.push(
-                   context,
-                   MaterialPageRoute(builder: (context) => const DSUInstallationScreen()),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const DSUInstallationScreen()),
+                );
+              } else if (data['title'] == '系统修改') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SystemSettingsPage()),
+                );
+              } else if (data['title'] == '主题安装') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ThemeInstallationPage()),
                 );
               }
             },

@@ -152,7 +152,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                             color: Colors.black.withOpacity(0.5), // 黑色半透明背景
                           ),
                           child: const Text(
-                            'v1.0.0',
+                            'v1.0.0 开发预览版',
                             style: TextStyle(fontSize: 14, color: Colors.white),
                             //白色文本
                           ),
