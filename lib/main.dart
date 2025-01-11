@@ -162,7 +162,7 @@ class _MyAppState extends State<MyApp> {
       barrierDismissible: barrierDismissible,
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
       barrierColor: Colors.black54,
-      transitionDuration: const Duration(milliseconds: 300), // 遮罩出现速度更平缓
+      transitionDuration: const Duration(milliseconds: 500), // 遮罩出现速度更平缓
       pageBuilder: (context, animation, secondaryAnimation) => Stack(
         children: [
           if (_useBlurEffect)
@@ -335,7 +335,7 @@ class _MainScreenState extends State<MainScreen> {
       ),
     );
   }
-  
+
   Widget _buildBottomNavigationBar() {
     final bottomBar = Padding(
       padding: const EdgeInsets.all(18.0),
@@ -567,7 +567,7 @@ class _SettingsPageState extends State<SettingsPage> {
               },
             ),
           SwitchListTile(
-            title: const Text('开启底部全局模糊'),
+            title: const Text('开启全局模糊'),
             value: _useBlurEffect,
             onChanged: (bool value) {
               setState(() {
