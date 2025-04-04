@@ -45,6 +45,7 @@ jobs:
           name: ${{ matrix.platform }}-release
           path: |
             build/app/outputs/flutter-apk/*.apk
+            build/ios/iphoneos/*.app
   deploy:
     needs: build_and_test
     runs-on: ubuntu-latest
